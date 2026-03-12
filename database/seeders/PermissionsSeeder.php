@@ -36,7 +36,17 @@ class PermissionsSeeder extends Seeder
             ['name' => 'Petty Cash Delete', 'group_name' => 'Petty Cash Management Permissions'],
             ['name' => 'Petty Cash Update Status', 'group_name' => 'Petty Cash Management Permissions'],
             ['name' => 'Petty Cash Update Payment Status', 'group_name' => 'Petty Cash Management Permissions'],
-            
+
+            ['name' => 'Category Index', 'group_name' => 'Category Management Permissions'],
+            ['name' => 'Category Store', 'group_name' => 'Category Management Permissions'],
+            ['name' => 'Category Show', 'group_name' => 'Category Management Permissions'],
+            ['name' => 'Category Update', 'group_name' => 'Category Management Permissions'],
+            ['name' => 'Category Destroy', 'group_name' => 'Category Management Permissions'],
+
+            ['name' => 'Notification Index', 'group_name' => 'Notification Management Permissions'],
+            ['name' => 'Notification Mark Read', 'group_name' => 'Notification Management Permissions'],
+            ['name' => 'Notification Mark All Read', 'group_name' => 'Notification Management Permissions'],
+
             ['name' => 'Activity Log Index', 'group_name' => 'Log Management Permissions'],
         ];
 

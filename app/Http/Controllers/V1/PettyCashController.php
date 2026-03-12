@@ -7,11 +7,14 @@ use App\Http\Requests\CreatePettyCashRequest;
 use App\Http\Requests\UpdatePettyCashStatusRequest;
 use App\Http\Requests\UpdatePettyCashPaymentStatusRequest;
 use App\Models\PettyCash;
+use App\Models\User;
 use App\Traits\FileUploadTrait;
 use App\Traits\LogsActivity;
+use App\Notifications\PettyCashNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -37,7 +40,7 @@ class PettyCashController extends Controller implements HasMiddleware
     {
         try {
             $perPage = $request->get('per_page', 15);
-            $query = PettyCash::with('approver');
+            $query = PettyCash::with(['approver', 'category']);
 
             if ($request->has('search')) {
                 $search = $request->search;
@@ -101,6 +104,12 @@ class PettyCashController extends Controller implements HasMiddleware
 
             $pettyCash = PettyCash::create($data);
 
+            // Notify initial handlers (notify_petty_cash_request = true)
+            $usersToNotify = User::where('notify_petty_cash_request', true)->get();
+            if ($usersToNotify->isNotEmpty()) {
+                Notification::send($usersToNotify, new PettyCashNotification($pettyCash, 'created'));
+            }
+
             $this->logActivity('Submitted Petty Cash', 'Petty Cash', "Submitted petty cash: {$pettyCash->reference_number}", ['id' => $pettyCash->id]);
 
             Log::info('Petty Cash created', [
@@ -111,7 +120,7 @@ class PettyCashController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'success',
                 'message' => 'Petty cash submitted successfully',
-                'data' => $pettyCash
+                'data' => $pettyCash->load('category')
             ], 201);
         } catch (\Throwable $th) {
             return response()->json([
@@ -171,6 +180,14 @@ class PettyCashController extends Controller implements HasMiddleware
 
             $pettyCash->update($data);
 
+            // If approved, notify payment handlers (notify_petty_cash_payment = true)
+            if ($pettyCash->status === 'approved') {
+                $usersToNotify = User::where('notify_petty_cash_payment', true)->get();
+                if ($usersToNotify->isNotEmpty()) {
+                    Notification::send($usersToNotify, new PettyCashNotification($pettyCash, 'ready_for_payment'));
+                }
+            }
+
             $this->logActivity('Updated Petty Cash Status', 'Petty Cash', "Updated status for {$pettyCash->reference_number} to {$pettyCash->status}", ['id' => $pettyCash->id, 'status' => $pettyCash->status]);
 
             Log::info('Petty Cash status updated', [
@@ -182,7 +199,7 @@ class PettyCashController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'success',
                 'message' => 'Petty cash status updated successfully',
-                'data' => $pettyCash->load('approver')
+                'data' => $pettyCash->load(['approver', 'category'])
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
@@ -219,6 +236,14 @@ class PettyCashController extends Controller implements HasMiddleware
             $data = $request->validated();
             $pettyCash->update($data);
 
+            // If paid, notify initial handlers (notify_petty_cash_request = true)
+            if ($pettyCash->payment_status === 'paid') {
+                $usersToNotify = User::where('notify_petty_cash_request', true)->get();
+                if ($usersToNotify->isNotEmpty()) {
+                    Notification::send($usersToNotify, new PettyCashNotification($pettyCash, 'paid'));
+                }
+            }
+
             $this->logActivity('Updated Petty Cash Payment Status', 'Petty Cash', "Updated payment status for {$pettyCash->reference_number} to {$pettyCash->payment_status}", ['id' => $pettyCash->id, 'payment_status' => $pettyCash->payment_status]);
 
             Log::info('Petty Cash payment status updated', [
@@ -230,7 +255,7 @@ class PettyCashController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'success',
                 'message' => 'Petty cash payment status updated successfully',
-                'data' => $pettyCash
+                'data' => $pettyCash->load('category')
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([

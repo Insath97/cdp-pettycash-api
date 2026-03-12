@@ -15,6 +15,7 @@ class PettyCash extends Model
         'branch_location',
         'department',
         'date_needed',
+        'category_id',
         'description',
         'type',
         'receipt_image_path',
@@ -35,5 +36,13 @@ class PettyCash extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
+     * Get the category associated with the petty cash.
+     */
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
     }
 }

@@ -20,6 +20,8 @@ return new class extends Migration {
             $table->boolean('can_login')->default(true);
             $table->timestamp('last_login_at')->nullable();
             $table->string('last_login_ip')->nullable();
+            $table->boolean('notify_petty_cash_request')->default(false);
+            $table->boolean('notify_petty_cash_payment')->default(false);
             $table->rememberToken();
             $table->timestamps();
         });

@@ -31,6 +31,8 @@ class CreateUserRequest extends FormRequest
             'password' => 'required|string|min:8',
             'is_active' => 'sometimes|boolean',
             'can_login' => 'sometimes|boolean',
+            'notify_petty_cash_request' => 'sometimes|boolean',
+            'notify_petty_cash_payment' => 'sometimes|boolean',
         ];
     }
 

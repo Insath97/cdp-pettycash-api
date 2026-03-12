@@ -28,6 +28,7 @@ class CreatePettyCashRequest extends FormRequest
             'branch_location' => 'required|string|max:255',
             'department' => 'nullable|string|max:255',
             'date_needed' => 'required|date',
+            'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
             'type' => 'required|in:new_purchase,reimbursement',
             'amount' => 'required|numeric|min:0',

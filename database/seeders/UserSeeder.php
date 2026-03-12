@@ -19,7 +19,6 @@ class UserSeeder extends Seeder
             ['email' => 'dev@localhost.com', 'username' => 'devadmin'],
             [
                 'name' => 'Development Admin',
-                'profile_image' => '/image',
                 'password' => bcrypt('password'),
                 'is_active' => true,
                 'can_login' => true,

@@ -32,6 +32,8 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
         'email_verified_at',
         'email_verification_token',
         'email_verification_token_expires_at',
+        'notify_petty_cash_request',
+        'notify_petty_cash_payment',
     ];
 
     /**
@@ -58,6 +60,8 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
             'last_login_at' => 'datetime',
             'is_active' => 'boolean',
             'can_login' => 'boolean',
+            'notify_petty_cash_request' => 'boolean',
+            'notify_petty_cash_payment' => 'boolean',
         ];
     }
 

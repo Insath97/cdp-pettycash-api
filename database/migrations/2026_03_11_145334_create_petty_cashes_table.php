@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('branch_location');
             $table->string('department')->nullable();
             $table->date('date_needed');
+            $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->text('description')->nullable();
             $table->enum('type', ['new_purchase', 'reimbursement'])->default('new_purchase');
             $table->string('receipt_image_path')->nullable();

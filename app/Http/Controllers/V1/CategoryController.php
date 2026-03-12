@@ -1,0 +1,193 @@
+<?php
+
+namespace App\Http\Controllers\V1;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\V1\CreateCategoryRequest;
+use App\Http\Requests\V1\UpdateCategoryRequest;
+use App\Models\Category;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+
+class CategoryController extends Controller implements HasMiddleware
+{
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:Category Index', only: ['index']),
+            new Middleware('permission:Category Store', only: ['store']),
+            new Middleware('permission:Category Show', only: ['show']),
+            new Middleware('permission:Category Update', only: ['update']),
+            new Middleware('permission:Category Destroy', only: ['destroy']),
+        ];
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        try {
+            $perPage = $request->get('per_page', 20);
+            $query = Category::query();
+
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('slug', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            $categories = $query->latest()->paginate($perPage);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Categories retrieved successfully',
+                'data' => $categories
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve categories',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(CreateCategoryRequest $request)
+    {
+        try {
+            $category = Category::create($request->validated());
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Category created successfully',
+                'data' => $category
+            ], 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create category',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show($id)
+    {
+        try {
+            $category = Category::find($id);
+
+            if (!$category) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Category not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Category retrieved successfully',
+                'data' => $category
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve category',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateCategoryRequest $request, $id)
+    {
+        try {
+            $category = Category::find($id);
+
+            if (!$category) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Category not found'
+                ], 404);
+            }
+
+            $category->update($request->validated());
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Category updated successfully',
+                'data' => $category
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update category',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id)
+    {
+        try {
+            $category = Category::find($id);
+
+            if (!$category) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Category not found'
+                ], 404);
+            }
+
+            $category->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Category deleted successfully'
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to delete category',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get a listing of categories for select box.
+     */
+    public function getCategoryList()
+    {
+        try {
+            $categories = Category::select('id', 'name')->orderBy('name')->get();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Categories list retrieved successfully',
+                'data' => $categories
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve categories list',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
+}
