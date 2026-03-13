@@ -10,9 +10,11 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use App\Traits\ActivityLogTrait;
 
 class RoleController extends Controller implements HasMiddleware
 {
+    use ActivityLogTrait;
     public static function middleware(): array
     {
         return [
@@ -85,16 +87,24 @@ class RoleController extends Controller implements HasMiddleware
                 $role->syncPermissions($permissions);
             }
 
+            $this->logActivity('CREATE', 'role', "Created role with ID: {$role->id}", $role->toArray());
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Role created successfully',
                 'data' => $role->load('permissions')
             ], 201);
         } catch (\Throwable $th) {
+            $this->logActivity(
+                'ERROR',
+                'Role',
+                "Failed to create role: " . substr($th->getMessage(), 0, 100)
+            );
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create role',
-                'error' => $th->getMessage()
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }
@@ -160,12 +170,20 @@ class RoleController extends Controller implements HasMiddleware
 
             $role->load('permissions');
 
+            $this->logActivity('UPDATE', 'role', "Updated role with ID: {$role->id}", $role->toArray());
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Role updated successfully',
                 'data' => $role
             ], 200);
         } catch (\Throwable $th) {
+            $this->logActivity(
+                'ERROR',
+                'Role',
+                "Failed to update role ID {$id}: " . substr($th->getMessage(), 0, 100)
+            );
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to update role',
@@ -210,11 +228,19 @@ class RoleController extends Controller implements HasMiddleware
 
             $role->delete();
 
+            $this->logActivity('DELETE', 'role', "Deleted role with ID: {$id}");
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Role deleted successfully'
             ], 200);
         } catch (\Throwable $th) {
+            $this->logActivity(
+                'ERROR',
+                'Role',
+                "Failed to delete role ID {$id}: " . substr($th->getMessage(), 0, 100)
+            );
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to delete role',

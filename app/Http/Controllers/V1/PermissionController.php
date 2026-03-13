@@ -9,9 +9,11 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Spatie\Permission\Models\Permission;
+use App\Traits\ActivityLogTrait;
 
 class PermissionController extends Controller implements HasMiddleware
 {
+    use ActivityLogTrait;
     public static function middleware(): array
     {
         return [
@@ -88,16 +90,24 @@ class PermissionController extends Controller implements HasMiddleware
 
             $permission = Permission::create($data);
 
+            $this->logActivity('CREATE', 'permission', "Created permission with ID: {$permission->id}", $permission->toArray());
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Permission created successfully',
                 'data' => $permission
             ], 201);
         } catch (\Throwable $th) {
+            $this->logActivity(
+                'ERROR',
+                'Permission',
+                "Failed to create permission: " . substr($th->getMessage(), 0, 100)
+            );
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create permission',
-                'error' => $th->getMessage()
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }
@@ -154,12 +164,20 @@ class PermissionController extends Controller implements HasMiddleware
 
             $permission->update($data);
 
+            $this->logActivity('UPDATE', 'permission', "Updated permission with ID: {$permission->id}", $permission->toArray());
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Permission updated successfully',
                 'data' => $permission
             ], 200);
         } catch (\Throwable $th) {
+            $this->logActivity(
+                'ERROR',
+                'Permission',
+                "Failed to update permission ID {$id}: " . substr($th->getMessage(), 0, 100)
+            );
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to update permission',
@@ -194,11 +212,19 @@ class PermissionController extends Controller implements HasMiddleware
 
             $permission->delete();
 
+            $this->logActivity('DELETE', 'permission', "Deleted permission with ID: {$id}");
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Permission deleted successfully'
             ], 200);
         } catch (\Throwable $th) {
+            $this->logActivity(
+                'ERROR',
+                'Permission',
+                "Failed to delete permission ID {$id}: " . substr($th->getMessage(), 0, 100)
+            );
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to delete permission',

@@ -8,7 +8,7 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Mail\UserCreateMail;
 use App\Models\User;
 use App\Traits\FileUploadTrait;
-use App\Traits\LogsActivity;
+use App\Traits\ActivityLogTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +21,7 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller implements HasMiddleware
 {
-    use FileUploadTrait, LogsActivity;
+    use FileUploadTrait, ActivityLogTrait;
 
     public static function middleware(): array
     {
@@ -111,7 +111,7 @@ class UserController extends Controller implements HasMiddleware
 
             $user = User::create($data);
 
-            $this->logActivity('Created User', 'User Management', "Created user: {$user->username}", ['id' => $user->id]);
+            $this->logActivity('CREATE', 'user', "Created user with ID: {$user->id}", $user->toArray());
 
             // Assign Role
             if (isset($data['role'])) {
@@ -172,10 +172,16 @@ class UserController extends Controller implements HasMiddleware
                 $this->deleteFile($imagePath);
             }
 
+            $this->logActivity(
+                'ERROR',
+                'User',
+                "Failed to create user: " . substr($th->getMessage(), 0, 100)
+            );
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create user',
-                'error' => $th->getMessage()
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }
@@ -246,7 +252,7 @@ class UserController extends Controller implements HasMiddleware
 
             $user->update($data);
 
-            $this->logActivity('Updated User', 'User Management', "Updated user: {$user->username}", ['id' => $user->id]);
+            $this->logActivity('UPDATE', 'user', "Updated user with ID: {$user->id}", $user->toArray());
 
             if (isset($data['role'])) {
                 $user->syncRoles([$data['role']]);
@@ -278,6 +284,12 @@ class UserController extends Controller implements HasMiddleware
                 'data' => $userData
             ], 200);
         } catch (\Throwable $th) {
+            $this->logActivity(
+                'ERROR',
+                'User',
+                "Failed to update user ID {$id}: " . substr($th->getMessage(), 0, 100)
+            );
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to update user',
@@ -321,7 +333,7 @@ class UserController extends Controller implements HasMiddleware
             $this->deleteFile($user->profile_image);
             $user->delete();
 
-            $this->logActivity('Deleted User', 'User Management', "Deleted user: {$id}");
+            $this->logActivity('DELETE', 'user', "Deleted user with ID: {$id}");
 
             Log::info('User deleted', [
                 'admin_id' => Auth::id(),
@@ -333,6 +345,12 @@ class UserController extends Controller implements HasMiddleware
                 'message' => 'User deleted successfully'
             ], 200);
         } catch (\Throwable $th) {
+            $this->logActivity(
+                'ERROR',
+                'User',
+                "Failed to delete user ID {$id}: " . substr($th->getMessage(), 0, 100)
+            );
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to delete user',
@@ -364,6 +382,8 @@ class UserController extends Controller implements HasMiddleware
             $user->is_active = !$user->is_active;
             $user->save();
 
+            $this->logActivity('UPDATE_STATUS', 'user', "Toggled status for user ID: {$user->id} to " . ($user->is_active ? 'active' : 'inactive'));
+
             Log::info('User status toggled', [
                 'admin_id' => Auth::id(),
                 'target_user_id' => $user->id,
@@ -379,6 +399,12 @@ class UserController extends Controller implements HasMiddleware
                 ]
             ], 200);
         } catch (\Throwable $th) {
+            $this->logActivity(
+                'ERROR',
+                'User',
+                "Failed to toggle status for user ID {$id}: " . substr($th->getMessage(), 0, 100)
+            );
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to toggle user status',
