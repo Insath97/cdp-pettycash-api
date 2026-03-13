@@ -50,6 +50,13 @@ class PermissionsSeeder extends Seeder
             ['name' => 'Branch Delete', 'group_name' => 'Branch Management Permissions'],
             ['name' => 'Branch Toggle Status', 'group_name' => 'Branch Management Permissions'],
 
+            ['name' => 'Department Index', 'group_name' => 'Department Management Permissions'],
+            ['name' => 'Department Create', 'group_name' => 'Department Management Permissions'],
+            ['name' => 'Department Show', 'group_name' => 'Department Management Permissions'],
+            ['name' => 'Department Update', 'group_name' => 'Department Management Permissions'],
+            ['name' => 'Department Delete', 'group_name' => 'Department Management Permissions'],
+            ['name' => 'Department Toggle Status', 'group_name' => 'Department Management Permissions'],
+
             ['name' => 'Notification Index', 'group_name' => 'Notification Management Permissions'],
             ['name' => 'Notification Mark Read', 'group_name' => 'Notification Management Permissions'],
             ['name' => 'Notification Mark All Read', 'group_name' => 'Notification Management Permissions'],

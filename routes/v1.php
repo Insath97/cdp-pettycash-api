@@ -7,6 +7,7 @@ use App\Http\Controllers\V1\UserController;
 use App\Http\Controllers\V1\PettyCashController;
 use App\Http\Controllers\V1\CategoryController;
 use App\Http\Controllers\V1\BranchController;
+use App\Http\Controllers\V1\DepartmentController;
 use App\Http\Controllers\V1\NotificationController;
 use App\Http\Controllers\V1\ActivityLogController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +40,10 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
     Route::get('branches/list', [BranchController::class, 'getBranchList']);
     Route::patch('branches/{id}/toggle-status', [BranchController::class, 'toggleStatus']);
     Route::apiResource('branches', BranchController::class);
+
+    Route::get('departments/list', [DepartmentController::class, 'getDepartmentList']);
+    Route::patch('departments/{id}/toggle-status', [DepartmentController::class, 'toggleStatus']);
+    Route::apiResource('departments', DepartmentController::class);
 
     Route::patch('petty-cashes/{id}/status', [PettyCashController::class, 'updateStatus']);
     Route::patch('petty-cashes/{id}/payment-status', [PettyCashController::class, 'updatePaymentStatus']);
