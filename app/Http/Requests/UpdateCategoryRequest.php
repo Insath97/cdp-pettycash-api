@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\V1;
+namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
@@ -26,12 +26,7 @@ class UpdateCategoryRequest extends FormRequest
     {
         return [
             'name' => 'nullable|string|max:255',
-            'slug' => [
-                'nullable',
-                'string',
-                'max:255',
-                Rule::unique('categories', 'slug')->ignore($this->route('category')),
-            ],
+            'slug' => ['sometimes', 'string', 'max:255', 'unique:categories,slug,' . $this->route('category')->id],
             'description' => 'nullable|string',
         ];
     }

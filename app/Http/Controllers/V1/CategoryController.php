@@ -3,15 +3,20 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\V1\CreateCategoryRequest;
-use App\Http\Requests\V1\UpdateCategoryRequest;
+use App\Http\Requests\CreateCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
 use App\Models\Category;
+use App\Traits\ActivityLogTrait;
+use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Str;
 
 class CategoryController extends Controller implements HasMiddleware
 {
+    use ActivityLogTrait;
+
     public static function middleware(): array
     {
         return [
@@ -63,7 +68,15 @@ class CategoryController extends Controller implements HasMiddleware
     public function store(CreateCategoryRequest $request)
     {
         try {
-            $category = Category::create($request->validated());
+            $data = $request->validated();
+
+            if (empty($data['slug'])) {
+                $data['slug'] = Str::slug($data['name']);
+            }
+
+            $category = Category::create($data);
+
+            $this->logActivity('CREATE', 'category', "Created category with ID: {$category->id}", $category->toArray());
 
             return response()->json([
                 'status' => 'success',
@@ -71,10 +84,17 @@ class CategoryController extends Controller implements HasMiddleware
                 'data' => $category
             ], 201);
         } catch (\Throwable $th) {
+
+            $this->logActivity(
+                'ERROR',
+                'Category',
+                "Failed to create category: " . substr($th->getMessage(), 0, 100)
+            );
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create category',
-                'error' => $th->getMessage()
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }
@@ -123,7 +143,15 @@ class CategoryController extends Controller implements HasMiddleware
                 ], 404);
             }
 
-            $category->update($request->validated());
+            $data = $request->validated();
+
+            if (isset($data['name']) && $data['name'] !== $category->name) {
+                $data['slug'] = Str::slug($data['name']);
+            }
+
+            $category->update($data);
+
+            $this->logActivity('UPDATE', 'category', "Updated category with ID: {$category->id}", $category->toArray());
 
             return response()->json([
                 'status' => 'success',
@@ -131,6 +159,13 @@ class CategoryController extends Controller implements HasMiddleware
                 'data' => $category
             ], 200);
         } catch (\Throwable $th) {
+
+            $this->logActivity(
+                'ERROR',
+                'Category',
+                "Failed to update category ID {$id}: " . substr($th->getMessage(), 0, 100)
+            );
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to update category',
@@ -156,11 +191,20 @@ class CategoryController extends Controller implements HasMiddleware
 
             $category->delete();
 
+            $this->logActivity('DELETE', 'category', "Deleted category with ID: {$id}");
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Category deleted successfully'
             ], 200);
         } catch (\Throwable $th) {
+
+            $this->logActivity(
+                'ERROR',
+                'Category',
+                "Failed to delete category ID {$id}: " . substr($th->getMessage(), 0, 100)
+            );
+            
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to delete category',
