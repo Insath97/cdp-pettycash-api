@@ -33,7 +33,7 @@ class RoleController extends Controller implements HasMiddleware
             // Search
             if ($request->has('search') && $request->search != '') {
                 $search = $request->search;
-                $query->where(function ($q) use ($search) {
+                $query->whereNested(function ($q) use ($search) {
                     $q->where('name', 'LIKE', "%{$search}%")
                         ->orWhere('guard_name', 'LIKE', "%{$search}%");
                 });
@@ -230,7 +230,7 @@ class RoleController extends Controller implements HasMiddleware
 
             $query = Role::query();
 
-            if ($user->hasRole('Super Admin')) {
+            if (!$user->hasRole('Super Admin')) {
                 $query->where('name', '!=', 'Super Admin');
             }
 
