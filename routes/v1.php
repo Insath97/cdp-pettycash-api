@@ -15,12 +15,12 @@ use Illuminate\Support\Facades\Route;
 /* public routes */
 
 Route::prefix('v1')->group(function () {
-    Route::post('login', [AuthController::class, 'login']);
-    Route::post('petty-cashes', [PettyCashController::class, 'store']);
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:auth');
+    Route::post('petty-cashes', [PettyCashController::class, 'store'])->middleware('throttle:api');
 });
 
 /* protected routes */
-Route::middleware(['auth:api'])->prefix('v1')->group(function () {
+Route::middleware(['auth:api', 'throttle:api'])->prefix('v1')->group(function () {
 
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
