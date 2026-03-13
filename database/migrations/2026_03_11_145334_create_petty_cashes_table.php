@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+return new class extends Migration 
 {
     /**
      * Run the migrations.
@@ -15,8 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('reference_number')->unique();
             $table->string('full_name');
-            $table->string('branch_location');
-            $table->string('department')->nullable();
+            $table->string('email')->unique();
+            $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
+            $table->foreignId('department_id')->nullable()->constrained('departments')->onDelete('cascade');
             $table->date('date_needed');
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->text('description')->nullable();
@@ -26,6 +27,7 @@ return new class extends Migration
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->enum('payment_status', ['pending', 'onhold', 'paid'])->default('pending');
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('paid_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
         });
     }

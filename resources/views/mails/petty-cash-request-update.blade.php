@@ -103,17 +103,45 @@
                     <div class="info-value">{{ $pettyCash->reference_number }}</div>
                 </div>
                 <div class="info-item">
+                    <div class="info-label">Requested By</div>
+                    <div class="info-value">{{ $pettyCash->full_name }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Branch</div>
+                    <div class="info-value">{{ $pettyCash->branch->name ?? 'N/A' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Department</div>
+                    <div class="info-value">{{ $pettyCash->department->name ?? 'N/A' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Type</div>
+                    <div class="info-value">{{ str_replace('_', ' ', ucfirst($pettyCash->type)) }}</div>
+                </div>
+                <div class="info-item">
                     <div class="info-label">Category</div>
                     <div class="info-value">{{ $pettyCash->category->name ?? 'N/A' }}</div>
                 </div>
+                @if($pettyCash->payer && $pettyCash->payment_status === 'paid')
+                <div class="info-item">
+                    <div class="info-label">Paid By</div>
+                    <div class="info-value">{{ $pettyCash->payer->name }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Payer Email</div>
+                    <div class="info-value">{{ $pettyCash->payer->email }}</div>
+                </div>
+                @endif
                 <div class="info-item">
                     <div class="info-label">Amount</div>
                     <div class="info-value">{{ number_format($pettyCash->amount, 2) }}</div>
                 </div>
-                <div class="info-item">
-                    <div class="info-label">Status</div>
-                    <div class="info-value">{{ strtoupper($pettyCash->status) }}</div>
+                @if($pettyCash->description)
+                <div class="info-item" style="display: block; margin-top: 15px;">
+                    <div class="info-label" style="width: 100%; margin-bottom: 5px;">Description</div>
+                    <div class="info-value" style="font-weight: 400; color: #475569;">{{ $pettyCash->description }}</div>
                 </div>
+                @endif
             </div>
 
             <a href="{{ $actionUrl }}" class="btn">View Request Details</a>

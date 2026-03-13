@@ -36,4 +36,12 @@ class Branch extends Model
             'is_active' => 'boolean',
         ];
     }
+
+    /**
+     * Get the petty cash requests for the branch.
+     */
+    public function pettyCashes()
+    {
+        return $this->hasMany(PettyCash::class);
+    }
 }

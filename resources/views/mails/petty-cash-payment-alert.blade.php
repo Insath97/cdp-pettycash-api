@@ -107,6 +107,18 @@
                     <div class="info-value">{{ $pettyCash->full_name }}</div>
                 </div>
                 <div class="info-item">
+                    <div class="info-label">Branch</div>
+                    <div class="info-value">{{ $pettyCash->branch->name ?? 'N/A' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Department</div>
+                    <div class="info-value">{{ $pettyCash->department->name ?? 'N/A' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Type</div>
+                    <div class="info-value">{{ str_replace('_', ' ', ucfirst($pettyCash->type)) }}</div>
+                </div>
+                <div class="info-item">
                     <div class="info-label">Amount</div>
                     <div class="info-value" style="color: #1e3a8a; font-size: 18px;">
                         {{ number_format($pettyCash->amount, 2) }}</div>
@@ -115,6 +127,24 @@
                     <div class="info-label">Category</div>
                     <div class="info-value">{{ $pettyCash->category->name ?? 'N/A' }}</div>
                 </div>
+                @if ($pettyCash->description)
+                    <div class="info-item" style="display: block; margin-top: 15px;">
+                        <div class="info-label" style="width: 100%; margin-bottom: 5px;">Description</div>
+                        <div class="info-value" style="font-weight: 400; color: #475569;">{{ $pettyCash->description }}
+                        </div>
+                    </div>
+                @endif
+                @if ($pettyCash->approver)
+                    <div class="info-item">
+                        <div class="info-label">Approved By</div>
+                        <div class="info-value">{{ $pettyCash->approver->name }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Approver Email</div>
+                        <div class="info-value">{{ $pettyCash->approver->email }}</div>
+                    </div>
+                @endif
+
             </div>
 
             <a href="{{ $actionUrl }}" class="btn">Process Payment Now</a>

@@ -26,7 +26,7 @@ class NotificationController extends Controller implements HasMiddleware
     {
         try {
             $perPage = $request->get('per_page', 20);
-            $notifications = Auth::user()
+            $notifications = auth('api')->user()
                 ->notifications()
                 ->paginate($perPage);
 
@@ -39,7 +39,7 @@ class NotificationController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve notifications',
-                'error' => $th->getMessage()
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }
@@ -50,7 +50,7 @@ class NotificationController extends Controller implements HasMiddleware
     public function unread()
     {
         try {
-            $notifications = Auth::user()->unreadNotifications;
+            $notifications = auth('api')->user()->unreadNotifications;
 
             return response()->json([
                 'status' => 'success',
@@ -61,7 +61,7 @@ class NotificationController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve unread notifications',
-                'error' => $th->getMessage()
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }
@@ -72,7 +72,7 @@ class NotificationController extends Controller implements HasMiddleware
     public function markAsRead(string $id)
     {
         try {
-            $notification = Auth::user()
+            $notification = auth('api')->user()
                 ->notifications()
                 ->where('id', $id)
                 ->first();
@@ -94,7 +94,7 @@ class NotificationController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to mark notification as read',
-                'error' => $th->getMessage()
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }
@@ -105,7 +105,7 @@ class NotificationController extends Controller implements HasMiddleware
     public function markAllAsRead()
     {
         try {
-            Auth::user()->unreadNotifications->markAsRead();
+            auth('api')->user()->unreadNotifications->markAsRead();
 
             return response()->json([
                 'status' => 'success',
@@ -115,7 +115,7 @@ class NotificationController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to mark all notifications as read',
-                'error' => $th->getMessage()
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }

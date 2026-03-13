@@ -12,8 +12,9 @@ class PettyCash extends Model
     protected $fillable = [
         'reference_number',
         'full_name',
-        'branch_location',
-        'department',
+        'email',
+        'branch_id',
+        'department_id',
         'date_needed',
         'category_id',
         'description',
@@ -23,6 +24,7 @@ class PettyCash extends Model
         'status',
         'payment_status',
         'approved_by',
+        'paid_by',
     ];
 
     protected $casts = [
@@ -36,6 +38,30 @@ class PettyCash extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
+     * Get the user who processed the payment for the petty cash.
+     */
+    public function payer()
+    {
+        return $this->belongsTo(User::class, 'paid_by');
+    }
+
+    /**
+     * Get the branch associated with the petty cash.
+     */
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Get the department associated with the petty cash.
+     */
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
     }
 
     /**

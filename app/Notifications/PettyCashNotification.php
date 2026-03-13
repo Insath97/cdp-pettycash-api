@@ -16,7 +16,7 @@ class PettyCashNotification extends Notification
 
     /**
      * Create a new notification instance.
-     * 
+     *
      * @param PettyCash $pettyCash
      * @param string $type ('created', 'ready_for_payment', 'paid')
      */
@@ -53,8 +53,8 @@ class PettyCashNotification extends Notification
         return (new MailMessage)
             ->subject($subject)
             ->view($view, [
-                'notifiableName' => $notifiable->name,
-                'pettyCash' => $this->pettyCash->load('category'),
+                'notifiableName' => $notifiable->name ?? $this->pettyCash->full_name,
+                'pettyCash' => $this->pettyCash->load(['category', 'branch', 'department', 'approver', 'payer']),
                 'messageText' => $messageText,
                 'actionUrl' => $actionUrl,
                 'type' => $this->type
@@ -79,9 +79,12 @@ class PettyCashNotification extends Notification
     protected function getSubject(): string
     {
         return match ($this->type) {
-            'created' => 'New Petty Cash Request Submitted',
-            'ready_for_payment' => 'Petty Cash Approved - Ready for Payment',
-            'paid' => 'Petty Cash Payment Completed',
+            'created' => 'New Petty Cash Received - ' . $this->pettyCash->reference_number,
+            'approved' => 'Petty Cash Approved - Waiting for Payment Approval - ' . $this->pettyCash->reference_number,
+            'rejected' => 'Petty Cash Rejected - ' . $this->pettyCash->reference_number,
+            'ready_for_payment' => 'Petty Cash Approved - Ready for Payment - ' . $this->pettyCash->reference_number,
+            'paid' => 'Petty Cash Payment Received - ' . $this->pettyCash->reference_number,
+            'onhold' => 'Petty Cash Payment On-Hold - ' . $this->pettyCash->reference_number,
             default => 'Petty Cash Notification',
         };
     }
@@ -89,9 +92,12 @@ class PettyCashNotification extends Notification
     protected function getMessage(): string
     {
         return match ($this->type) {
-            'created' => 'A new petty cash request has been submitted and is awaiting your review.',
+            'created' => 'A new petty cash request has been received and is awaiting your review.',
+            'approved' => 'Your petty cash request has been approved and is now waiting for payment approval.',
+            'rejected' => 'Your petty cash request has been rejected.',
             'ready_for_payment' => 'A petty cash request has been approved and is now ready for payment processing.',
-            'paid' => 'The payment for the petty cash request has been successfully processed.',
+            'paid' => 'The payment for your petty cash request has been successfully received.',
+            'onhold' => 'The payment for your petty cash request has been put on hold.',
             default => 'There is a new update regarding a petty cash request.',
         };
     }

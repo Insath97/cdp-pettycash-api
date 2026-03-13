@@ -31,4 +31,12 @@ class Department extends Model
             'is_active' => 'boolean',
         ];
     }
+
+    /**
+     * Get the petty cash requests for the department.
+     */
+    public function pettyCashes()
+    {
+        return $this->hasMany(PettyCash::class);
+    }
 }
