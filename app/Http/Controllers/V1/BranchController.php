@@ -6,58 +6,54 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateBranchRequest;
 use App\Http\Requests\UpdateBranchRequest;
 use App\Models\Branch;
+use App\Traits\ActivityLogTrait;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Database\Eloquent\Builder;
 
 class BranchController extends Controller implements HasMiddleware
 {
+    use ActivityLogTrait;
+
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:Branch Index', only: ['index', 'show', 'getBranchList']),
+            new Middleware('permission:Branch Index', only: ['index']),
             new Middleware('permission:Branch Create', only: ['store']),
+            new Middleware('permission:Branch Show', only: ['show']),
             new Middleware('permission:Branch Update', only: ['update']),
             new Middleware('permission:Branch Delete', only: ['destroy']),
             new Middleware('permission:Branch Toggle Status', only: ['toggleStatus']),
         ];
     }
 
+    /**
+     * Display a listing of the resource.
+     */
     public function index(Request $request)
     {
         try {
-            $perPage = $request->get('per_page', 15);
-            $query = Branch::with(['province', 'region', 'zonal']);
+            $perPage = $request->get('per_page', 20);
+            
+            /** @var \Illuminate\Database\Eloquent\Builder $query */
+            $query = Branch::query();
 
             if ($request->has('search')) {
-                $query->search($request->search);
+                $search = $request->search;
+                $query->where(function (Builder $q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhere('city', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
             }
 
             if ($request->has('is_active')) {
-                $query->where('is_active', $request->boolean('is_active'));
+                $request->boolean('is_active') ? $query->where('is_active', true) : $query->where('is_active', false);
             }
 
-            if ($request->has('province_id')) {
-                $query->where('province_id', $request->province_id);
-            }
-
-            if ($request->has('region_id')) {
-                $query->where('region_id', $request->region_id);
-            }
-
-            if ($request->has('zone_id')) {
-                $query->where('zone_id', $request->zone_id);
-            }
-
-            $branches = $query->paginate($perPage);
-
-            Log::info('Branches index accessed', [
-                'user_id' => Auth::id(),
-                'filters' => $request->only(['search', 'is_active', 'province_id', 'region_id', 'zone_id', 'per_page']),
-                'count' => $branches->count()
-            ]);
+            $branches = $query->latest()->paginate($perPage);
 
             return response()->json([
                 'status' => 'success',
@@ -65,11 +61,6 @@ class BranchController extends Controller implements HasMiddleware
                 'data' => $branches
             ], 200);
         } catch (\Throwable $th) {
-            Log::error('Failed to retrieve branches', [
-                'user_id' => Auth::id(),
-                'error' => $th->getMessage()
-            ]);
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve branches',
@@ -78,17 +69,16 @@ class BranchController extends Controller implements HasMiddleware
         }
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(CreateBranchRequest $request)
     {
         try {
             $data = $request->validated();
             $branch = Branch::create($data);
 
-            Log::info('Branch created', [
-                'user_id' => Auth::id(),
-                'branch_id' => $branch->id,
-                'branch_name' => $branch->name
-            ]);
+            $this->logActivity('CREATE', 'branch', "Created branch with ID: {$branch->id}", $branch->toArray());
 
             return response()->json([
                 'status' => 'success',
@@ -96,22 +86,24 @@ class BranchController extends Controller implements HasMiddleware
                 'data' => $branch
             ], 201);
         } catch (\Throwable $th) {
-            Log::error('Failed to create branch', [
-                'user_id' => Auth::id(),
-                'error' => $th->getMessage()
-            ]);
+            $this->logActivity('ERROR', 'branch', "Failed to create branch: " . substr($th->getMessage(), 0, 100));
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create branch',
-                'error' => $th->getMessage()
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }
 
-    public function show(string $id)
+    /**
+     * Display the specified resource.
+     */
+    public function show($id)
     {
         try {
-            $branch = Branch::with(['province', 'region', 'zonal'])->find($id);
+            /** @var Branch|null $branch */
+            $branch = Branch::where('id', $id)->first();
 
             if (!$branch) {
                 return response()->json([
@@ -120,22 +112,12 @@ class BranchController extends Controller implements HasMiddleware
                 ], 404);
             }
 
-            Log::info('Branch viewed', [
-                'user_id' => Auth::id(),
-                'branch_id' => $branch->id
-            ]);
-
             return response()->json([
                 'status' => 'success',
                 'message' => 'Branch retrieved successfully',
                 'data' => $branch
             ], 200);
         } catch (\Throwable $th) {
-            Log::error('Failed to retrieve branch', [
-                'user_id' => Auth::id(),
-                'error' => $th->getMessage()
-            ]);
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve branch',
@@ -144,10 +126,14 @@ class BranchController extends Controller implements HasMiddleware
         }
     }
 
-    public function update(UpdateBranchRequest $request, string $id)
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateBranchRequest $request, $id)
     {
         try {
-            $branch = Branch::find($id);
+            /** @var Branch|null $branch */
+            $branch = Branch::where('id', $id)->first();
 
             if (!$branch) {
                 return response()->json([
@@ -159,11 +145,7 @@ class BranchController extends Controller implements HasMiddleware
             $data = $request->validated();
             $branch->update($data);
 
-            Log::info('Branch updated', [
-                'user_id' => Auth::id(),
-                'branch_id' => $branch->id,
-                'updated_fields' => array_keys($data)
-            ]);
+            $this->logActivity('UPDATE', 'branch', "Updated branch with ID: {$branch->id}", $branch->toArray());
 
             return response()->json([
                 'status' => 'success',
@@ -171,23 +153,24 @@ class BranchController extends Controller implements HasMiddleware
                 'data' => $branch
             ], 200);
         } catch (\Throwable $th) {
-            Log::error('Failed to update branch', [
-                'user_id' => Auth::id(),
-                'error' => $th->getMessage()
-            ]);
+            $this->logActivity('ERROR', 'branch', "Failed to update branch ID {$id}: " . substr($th->getMessage(), 0, 100));
 
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to update branch',
-                'error' => $th->getMessage()
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }
 
-    public function destroy(string $id)
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id)
     {
         try {
-            $branch = Branch::find($id);
+            /** @var Branch|null $branch */
+            $branch = Branch::where('id', $id)->first();
 
             if (!$branch) {
                 return response()->json([
@@ -196,43 +179,33 @@ class BranchController extends Controller implements HasMiddleware
                 ], 404);
             }
 
-            // Check if user is Super Admin
-            if (!Auth::user()->hasRole('Super Admin')) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Only Super Admin can delete branches'
-                ], 403);
-            }
-
             $branch->delete();
 
-            Log::info('Branch deleted', [
-                'user_id' => Auth::id(),
-                'branch_id' => $id,
-                'branch_name' => $branch->name
-            ]);
+            $this->logActivity('DELETE', 'branch', "Deleted branch with ID: {$id}");
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Branch deleted successfully'
             ], 200);
         } catch (\Throwable $th) {
-            Log::error('Failed to delete branch', [
-                'user_id' => Auth::id(),
-                'error' => $th->getMessage()
-            ]);
+            $this->logActivity('ERROR', 'branch', "Failed to delete branch ID {$id}: " . substr($th->getMessage(), 0, 100));
+            
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to delete branch',
-                'error' => $th->getMessage()
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }
 
+    /**
+     * Toggle the active status of the branch.
+     */
     public function toggleStatus(string $id)
     {
         try {
-            $branch = Branch::find($id);
+            /** @var Branch|null $branch */
+            $branch = Branch::where('id', $id)->first();
 
             if (!$branch) {
                 return response()->json([
@@ -244,11 +217,7 @@ class BranchController extends Controller implements HasMiddleware
             $branch->is_active = !$branch->is_active;
             $branch->save();
 
-            Log::info('Branch status toggled', [
-                'user_id' => Auth::id(),
-                'branch_id' => $branch->id,
-                'new_status' => $branch->is_active
-            ]);
+            $this->logActivity('UPDATE_STATUS', 'branch', "Toggled status for branch ID: {$branch->id} to " . ($branch->is_active ? 'active' : 'inactive'));
 
             return response()->json([
                 'status' => 'success',
@@ -259,50 +228,38 @@ class BranchController extends Controller implements HasMiddleware
                 ]
             ], 200);
         } catch (\Throwable $th) {
+            $this->logActivity('ERROR', 'branch', "Failed to toggle status for branch ID {$id}: " . substr($th->getMessage(), 0, 100));
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to toggle branch status',
-                'error' => $th->getMessage()
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }
 
-    public function getBranchList(Request $request)
+    /**
+     * Get a listing of active branches for select box.
+     */
+    public function getBranchList()
     {
         try {
-            $query = Branch::active();
-
-            if ($request->has('province_id')) {
-                $query->where('province_id', $request->province_id);
-            }
-
-            if ($request->has('region_id')) {
-                $query->where('region_id', $request->region_id);
-            }
-
-            if ($request->has('zone_id')) {
-                $query->where('zone_id', $request->zone_id);
-            }
-
-            $branches = $query->select('id', 'name', 'code', 'city', 'province_id', 'region_id', 'zone_id')
-                ->with(['province:id,name', 'region:id,name', 'zonal:id,name'])
-                ->orderBy('name', 'asc')
+            /** @var \Illuminate\Database\Eloquent\Builder $query */
+            $query = Branch::query();
+            $branches = $query->where('is_active', true)
+                ->select('id', 'name', 'code')
+                ->orderBy('name')
                 ->get();
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Branches retrieved successfully',
+                'message' => 'Active branches list retrieved successfully',
                 'data' => $branches
             ], 200);
         } catch (\Throwable $th) {
-            Log::error('Failed to retrieve branch list', [
-                'user_id' => Auth::id(),
-                'error' => $th->getMessage()
-            ]);
-
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to retrieve branches',
+                'message' => 'Failed to retrieve branches list',
                 'error' => $th->getMessage()
             ], 500);
         }

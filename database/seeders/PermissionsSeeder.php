@@ -43,6 +43,13 @@ class PermissionsSeeder extends Seeder
             ['name' => 'Category Update', 'group_name' => 'Category Management Permissions'],
             ['name' => 'Category Destroy', 'group_name' => 'Category Management Permissions'],
 
+            ['name' => 'Branch Index', 'group_name' => 'Branch Management Permissions'],
+            ['name' => 'Branch Create', 'group_name' => 'Branch Management Permissions'],
+            ['name' => 'Branch Show', 'group_name' => 'Branch Management Permissions'],
+            ['name' => 'Branch Update', 'group_name' => 'Branch Management Permissions'],
+            ['name' => 'Branch Delete', 'group_name' => 'Branch Management Permissions'],
+            ['name' => 'Branch Toggle Status', 'group_name' => 'Branch Management Permissions'],
+
             ['name' => 'Notification Index', 'group_name' => 'Notification Management Permissions'],
             ['name' => 'Notification Mark Read', 'group_name' => 'Notification Management Permissions'],
             ['name' => 'Notification Mark All Read', 'group_name' => 'Notification Management Permissions'],
