@@ -42,7 +42,7 @@ class UserController extends Controller implements HasMiddleware
 
             if ($request->has('search')) {
                 $search = $request->search;
-                $query->where(function (Builder $builder) use ($search) {
+                $query->whereNested(function (Builder $builder) use ($search) {
                     $builder->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
                         ->orWhere('username', 'like', "%{$search}%");
@@ -221,7 +221,7 @@ class UserController extends Controller implements HasMiddleware
     public function update(UpdateUserRequest $request, string $id)
     {
         try {
-            $user = User::find($id);
+            $user = User::findOrFail($id);
 
             if (!$user) {
                 return response()->json([
@@ -341,10 +341,10 @@ class UserController extends Controller implements HasMiddleware
         }
     }
 
-    public function toggleStatus(string $id)
+    public function toggleStatus(string $id, array|string $columns = ['*'])
     {
         try {
-            $user = User::find($id);
+            $user = User::find($id, $columns);
 
             if (!$user) {
                 return response()->json([

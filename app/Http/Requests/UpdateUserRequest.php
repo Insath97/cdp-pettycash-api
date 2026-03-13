@@ -34,6 +34,7 @@ class UpdateUserRequest extends FormRequest
             'can_login' => 'sometimes|boolean',
             'notify_petty_cash_request' => 'sometimes|boolean',
             'notify_petty_cash_payment' => 'sometimes|boolean',
+            'role' => 'sometimes|string',
         ];
     }
 

@@ -40,11 +40,13 @@
                     <div class="credential-label">Password</div>
                     <div class="credential-value" style="color: #298c77;">{{ $password }}</div>
                 </div>
+                @if (isset($role) && !empty($role))
+                <div class="credential-item" style="margin-bottom: 0;">
+                    <div class="credential-label">Role</div>
+                    <div class="credential-value" style="color: #298c77;">{{ $role }}</div>
+                </div>
+                @endif
             </div>
-
-            @if (isset($role) && !empty($role))
-            <p><strong>Assigned Role:</strong> {{ $role }}</p>
-            @endif
 
             <a href="{{ $login_url ?? config('app.url') }}" class="btn">Login to Your Account</a>
             
