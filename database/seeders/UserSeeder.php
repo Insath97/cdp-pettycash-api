@@ -22,6 +22,10 @@ class UserSeeder extends Seeder
                 'password' => bcrypt('password'),
                 'is_active' => true,
                 'can_login' => true,
+                'notify_petty_cash_request' => true,
+                'notify_petty_cash_verify' => true,
+                'notify_petty_cash_approve' => true,
+                'notify_petty_cash_payment' => true,
             ]
         );
 

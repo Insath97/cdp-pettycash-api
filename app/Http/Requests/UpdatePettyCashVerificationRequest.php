@@ -6,14 +6,14 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class UpdatePettyCashStatusRequest extends FormRequest
+class UpdatePettyCashVerificationRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return true; // Admin middleware will handle this in routes
+        return true;
     }
 
     /**
@@ -24,7 +24,8 @@ class UpdatePettyCashStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'required|in:pending,verified,approved,rejected',
+            'status' => 'required|in:verified,rejected',
+            'description' => 'nullable|string|max:500',
         ];
     }
 

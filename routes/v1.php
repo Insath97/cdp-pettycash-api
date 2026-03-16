@@ -45,7 +45,8 @@ Route::middleware(['auth:api', 'throttle:api'])->prefix('v1')->group(function ()
     Route::patch('departments/{id}/toggle-status', [DepartmentController::class, 'toggleStatus']);
     Route::apiResource('departments', DepartmentController::class);
 
-    Route::patch('petty-cashes/{id}/status', [PettyCashController::class, 'updateStatus']);
+    Route::patch('petty-cashes/{id}/verify', [PettyCashController::class, 'updateStatusVerified']);
+    Route::patch('petty-cashes/{id}/approve', [PettyCashController::class, 'updateStatusApproved']);
     Route::patch('petty-cashes/{id}/payment-status', [PettyCashController::class, 'updatePaymentStatus']);
     Route::apiResource('petty-cashes', PettyCashController::class)->except(['store']);
 

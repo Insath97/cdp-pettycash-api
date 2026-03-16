@@ -34,6 +34,9 @@ class CreatePettyCashRequest extends FormRequest
             'type' => 'required|in:new_purchase,reimbursement',
             'amount' => 'required|numeric|min:0',
             'receipt_image_path' => 'required_if:type,reimbursement|file|image|max:2048',
+            'account_number' => 'required|string|max:50',
+            'bank_name' => 'required|string|max:100',
+            'bank_branch' => 'required|string|max:100',
         ];
     }
 

@@ -80,6 +80,7 @@ class PettyCashNotification extends Notification
     {
         return match ($this->type) {
             'created' => 'New Petty Cash Received - ' . $this->pettyCash->reference_number,
+            'verified' => 'Petty Cash Verified - Waiting for Final Approval - ' . $this->pettyCash->reference_number,
             'approved' => 'Petty Cash Approved - Waiting for Payment Approval - ' . $this->pettyCash->reference_number,
             'rejected' => 'Petty Cash Rejected - ' . $this->pettyCash->reference_number,
             'ready_for_payment' => 'Petty Cash Approved - Ready for Payment - ' . $this->pettyCash->reference_number,
@@ -93,6 +94,7 @@ class PettyCashNotification extends Notification
     {
         return match ($this->type) {
             'created' => 'A new petty cash request has been received and is awaiting your review.',
+            'verified' => 'A petty cash request has been verified and is now waiting for final approval.',
             'approved' => 'Your petty cash request has been approved and is now waiting for payment approval.',
             'rejected' => 'Your petty cash request has been rejected.',
             'ready_for_payment' => 'A petty cash request has been approved and is now ready for payment processing.',

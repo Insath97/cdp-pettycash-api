@@ -4,7 +4,6 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreatePettyCashRequest;
-use App\Http\Requests\UpdatePettyCashStatusRequest;
 use App\Http\Requests\UpdatePettyCashPaymentStatusRequest;
 use App\Models\PettyCash;
 use App\Models\User;
@@ -18,6 +17,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use App\Http\Requests\UpdatePettyCashVerificationRequest;
+use App\Http\Requests\UpdatePettyCashApprovalRequest;
 
 class PettyCashController extends Controller implements HasMiddleware
 {
@@ -28,7 +29,8 @@ class PettyCashController extends Controller implements HasMiddleware
         return [
             new Middleware('auth:api', except: ['store']),
             new Middleware('permission:Petty Cash Index', only: ['index', 'show']),
-            new Middleware('permission:Petty Cash Update Status', only: ['updateStatus']),
+            new Middleware('permission:Petty Cash Verify', only: ['updateStatusVerified']),
+            new Middleware('permission:Petty Cash Approve', only: ['updateStatusApproved']),
             new Middleware('permission:Petty Cash Update Payment Status', only: ['updatePaymentStatus']),
             new Middleware('permission:Petty Cash Delete', only: ['destroy']),
         ];
@@ -41,7 +43,7 @@ class PettyCashController extends Controller implements HasMiddleware
     {
         try {
             $perPage = $request->get('per_page', 15);
-            $query = PettyCash::with(['approver', 'category:id,name','branch:id,name','department:id,name']);
+            $query = PettyCash::with(['verifier', 'approver', 'category:id,name','branch:id,name','department:id,name']);
 
             if ($request->has('search')) {
                 $search = $request->search;
@@ -161,61 +163,6 @@ class PettyCashController extends Controller implements HasMiddleware
         }
     }
 
-    /**
-     * Update the status of the petty cash (Approve/Reject).
-     */
-    public function updateStatus(UpdatePettyCashStatusRequest $request, string $id)
-    {
-        try {
-            $pettyCash = PettyCash::find($id);
-
-            if (!$pettyCash) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Petty cash not found'
-                ], 404);
-            }
-
-            $data = $request->validated();
-            $data['approved_by'] = Auth::id();
-
-            $pettyCash->update($data);
-
-            // Notify initial handlers (notify_petty_cash_payment = true) if approved
-            if ($pettyCash->status === 'approved') {
-                $usersToNotify = User::where('notify_petty_cash_payment', true)->get();
-                if ($usersToNotify->isNotEmpty()) {
-                    Notification::send($usersToNotify, new PettyCashNotification($pettyCash, 'ready_for_payment'));
-                }
-            }
-
-            // Notify inserter about Approval/Rejection
-            if (in_array($pettyCash->status, ['approved', 'rejected'])) {
-                $type = ($pettyCash->status === 'approved') ? 'approved' : 'rejected';
-                Notification::route('mail', $pettyCash->email)->notify(new PettyCashNotification($pettyCash, $type));
-            }
-
-            $this->logActivity('Updated Petty Cash Status', 'Petty Cash', "Updated status for {$pettyCash->reference_number} to {$pettyCash->status}", ['id' => $pettyCash->id, 'status' => $pettyCash->status]);
-
-            Log::info('Petty Cash status updated', [
-                'id' => $pettyCash->id,
-                'status' => $pettyCash->status,
-                'approver_id' => Auth::id()
-            ]);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Petty cash status updated successfully',
-                'data' => $pettyCash->load(['approver', 'category'])
-            ], 200);
-        } catch (\Throwable $th) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to update petty cash status',
-                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
-            ], 500);
-        }
-    }
 
     /**
      * Update the payment status of the petty cash (Pending/On-Hold/Paid).
@@ -241,6 +188,10 @@ class PettyCashController extends Controller implements HasMiddleware
             }
 
             $data = $request->validated();
+            if (isset($data['description'])) {
+                $data['payment_description'] = $data['description'];
+                unset($data['description']);
+            }
             if ($data['payment_status'] === 'paid') {
                 $data['paid_by'] = Auth::id();
             }
@@ -322,6 +273,150 @@ class PettyCashController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to delete petty cash',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
+            ], 500);
+        }
+    }
+
+      /**
+     * Update the status of the petty cash (Approve/Reject).
+     */
+    public function updateStatusApproved(UpdatePettyCashApprovalRequest $request, string $id)
+    {
+        try {
+            $pettyCash = PettyCash::find($id);
+
+            if (!$pettyCash) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Petty cash not found'
+                ], 404);
+            }
+
+            // Logic: only allow approval if verified
+            if ($pettyCash->status !== 'verified') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Only verified petty cash requests can be approved'
+                ], 422);
+            }
+
+            $data = $request->validated();
+            
+            if ($data['status'] === 'approved') {
+                $data['approved_by'] = Auth::id();
+                if (isset($data['description'])) {
+                    $data['approved_description'] = $data['description'];
+                }
+            } elseif ($data['status'] === 'rejected') {
+                if (isset($data['description'])) {
+                    $data['rejected_description'] = $data['description'];
+                }
+            }
+            unset($data['description']);
+
+            $pettyCash->update($data);
+
+            // Notify stage handlers (notify_petty_cash_payment = true) if approved
+            if ($pettyCash->status === 'approved') {
+                $usersToNotify = User::where('notify_petty_cash_payment', true)->get();
+                if ($usersToNotify->isNotEmpty()) {
+                    Notification::send($usersToNotify, new PettyCashNotification($pettyCash, 'ready_for_payment'));
+                }
+            }
+
+            // Notify inserter about Status Change (Approved/Rejected)
+            Notification::route('mail', $pettyCash->email)->notify(new PettyCashNotification($pettyCash, $pettyCash->status));
+
+            $this->logActivity('Approved Petty Cash', 'Petty Cash', "Updated status for {$pettyCash->reference_number} to {$pettyCash->status}", ['id' => $pettyCash->id, 'status' => $pettyCash->status]);
+
+            Log::info('Petty Cash approval updated', [
+                'id' => $pettyCash->id,
+                'status' => $pettyCash->status,
+                'user_id' => Auth::id()
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Petty cash approval updated successfully',
+                'data' => $pettyCash->load(['approver', 'category'])
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update petty cash approval',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the status of the petty cash (Verify/Reject).
+     */
+    public function updateStatusVerified(UpdatePettyCashVerificationRequest $request, string $id)
+    {
+        try {
+            $pettyCash = PettyCash::find($id);
+
+            if (!$pettyCash) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Petty cash not found'
+                ], 404);
+            }
+
+            // Logic: only allow verification if pending
+            if ($pettyCash->status !== 'pending') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Only pending petty cash requests can be verified'
+                ], 422);
+            }
+
+            $data = $request->validated();
+            
+            if ($data['status'] === 'verified') {
+                $data['verified_by'] = Auth::id();
+                if (isset($data['description'])) {
+                    $data['verified_description'] = $data['description'];
+                }
+            } elseif ($data['status'] === 'rejected') {
+                if (isset($data['description'])) {
+                    $data['rejected_description'] = $data['description'];
+                }
+            }
+            unset($data['description']);
+
+            $pettyCash->update($data);
+
+            // Notify stage handlers (notify_petty_cash_approve = true) if verified
+            if ($pettyCash->status === 'verified') {
+                $usersToNotify = User::where('notify_petty_cash_approve', true)->get();
+                if ($usersToNotify->isNotEmpty()) {
+                    Notification::send($usersToNotify, new PettyCashNotification($pettyCash, 'verified'));
+                }
+            }
+
+            // Notify inserter about Status Change (Verified/Rejected)
+            Notification::route('mail', $pettyCash->email)->notify(new PettyCashNotification($pettyCash, $pettyCash->status));
+
+            $this->logActivity('Verified Petty Cash', 'Petty Cash', "Updated status for {$pettyCash->reference_number} to {$pettyCash->status}", ['id' => $pettyCash->id, 'status' => $pettyCash->status]);
+
+            Log::info('Petty Cash verification updated', [
+                'id' => $pettyCash->id,
+                'status' => $pettyCash->status,
+                'user_id' => Auth::id()
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Petty cash verification updated successfully',
+                'data' => $pettyCash->load(['verifier', 'category'])
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update petty cash verification',
                 'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }

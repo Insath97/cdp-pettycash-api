@@ -33,6 +33,8 @@ class UpdateUserRequest extends FormRequest
             'is_active' => 'sometimes|boolean',
             'can_login' => 'sometimes|boolean',
             'notify_petty_cash_request' => 'sometimes|boolean',
+            'notify_petty_cash_verify' => 'sometimes|boolean',
+            'notify_petty_cash_approve' => 'sometimes|boolean',
             'notify_petty_cash_payment' => 'sometimes|boolean',
             'role' => 'sometimes|string',
         ];

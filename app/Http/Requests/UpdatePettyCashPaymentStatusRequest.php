@@ -25,6 +25,7 @@ class UpdatePettyCashPaymentStatusRequest extends FormRequest
     {
         return [
             'payment_status' => 'required|in:pending,onhold,paid',
+            'description' => 'nullable|string|max:500',
         ];
     }
 

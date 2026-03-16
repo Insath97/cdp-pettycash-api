@@ -23,14 +23,30 @@ class PettyCash extends Model
         'amount',
         'status',
         'payment_status',
+        'verified_by',
         'approved_by',
         'paid_by',
+        'verified_description',
+        'approved_description',
+        'rejected_description',
+        'payment_description',
+        'account_number',
+        'bank_name',
+        'bank_branch',
     ];
 
     protected $casts = [
         'date_needed' => 'date',
         'amount' => 'decimal:2',
     ];
+
+    /**
+     * Get the user who verified the petty cash.
+     */
+    public function verifier()
+    {
+        return $this->belongsTo(User::class, 'verified_by');
+    }
 
     /**
      * Get the user who approved the petty cash.
