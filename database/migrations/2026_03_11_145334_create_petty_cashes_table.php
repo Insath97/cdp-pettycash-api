@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('reference_number')->unique();
             $table->string('full_name');
-            $table->string('email')->unique();
+            $table->string('email');
             $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
             $table->foreignId('department_id')->nullable()->constrained('departments')->onDelete('cascade');
             $table->date('date_needed');

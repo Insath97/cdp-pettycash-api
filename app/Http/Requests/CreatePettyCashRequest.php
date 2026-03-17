@@ -25,7 +25,7 @@ class CreatePettyCashRequest extends FormRequest
     {
         return [
             'full_name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:petty_cashes,email',
+            'email' => 'required|email|max:255',
             'branch_id' => 'required|exists:branches,id',
             'department_id' => 'nullable|exists:departments,id',
             'date_needed' => 'required|date',
