@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:auth');
     Route::post('petty-cashes', [PettyCashController::class, 'store'])->middleware('throttle:api');
+    Route::get('categories/public/list', [CategoryController::class, 'getCategoryList']);
+    Route::get('branches/public/list', [BranchController::class, 'getBranchList']);
+    Route::get('departments/public/list', [DepartmentController::class, 'getDepartmentList']);
 });
 
 /* protected routes */
