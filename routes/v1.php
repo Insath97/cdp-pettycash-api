@@ -10,6 +10,7 @@ use App\Http\Controllers\V1\BranchController;
 use App\Http\Controllers\V1\DepartmentController;
 use App\Http\Controllers\V1\NotificationController;
 use App\Http\Controllers\V1\ActivityLogController;
+use App\Http\Controllers\V1\SystemSettingController;
 use Illuminate\Support\Facades\Route;
 
 /* public routes */
@@ -20,6 +21,7 @@ Route::prefix('v1')->group(function () {
     Route::get('categories/public/list', [CategoryController::class, 'getCategoryList']);
     Route::get('branches/public/list', [BranchController::class, 'getBranchList']);
     Route::get('departments/public/list', [DepartmentController::class, 'getDepartmentList']);
+    Route::get('system-settings', [SystemSettingController::class, 'index']);
 });
 
 /* protected routes */
@@ -59,4 +61,6 @@ Route::middleware(['auth:api', 'throttle:api'])->prefix('v1')->group(function ()
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 
     Route::get('activity-logs', [ActivityLogController::class, 'index']);
+
+    Route::patch('system-settings', [SystemSettingController::class, 'update']);
 });

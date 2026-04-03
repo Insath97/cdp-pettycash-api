@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\SystemSetting;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -32,7 +33,7 @@ class CreatePettyCashRequest extends FormRequest
             'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
             'type' => 'required|in:new_purchase,reimbursement',
-            'amount' => 'required|numeric|min:0',
+            'amount' => 'required|numeric|min:0|max:' . (SystemSetting::getSetting('max_request_amount', 4000)),
             'receipt_image_path' => 'required_if:type,reimbursement|file|max:20480',
             'account_number' => 'required|string|max:50',
             'bank_name' => 'required|string|max:100',

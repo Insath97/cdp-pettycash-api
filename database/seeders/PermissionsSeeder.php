@@ -63,6 +63,8 @@ class PermissionsSeeder extends Seeder
             ['name' => 'Notification Mark All Read', 'group_name' => 'Notification Management Permissions'],
 
             ['name' => 'Activity Log Index', 'group_name' => 'Log Management Permissions'],
+            ['name' => 'System Setting Index', 'group_name' => 'System Setting Management Permissions'],
+            ['name' => 'System Setting Update', 'group_name' => 'System Setting Management Permissions'],
         ];
 
         foreach ($permissions as $permission) {
