@@ -31,7 +31,6 @@ trait ActivityLogTrait
 
             // Laravel file logging
             Log::info("[{$module}] {$action}: {$description} | User ID: " . (Auth::guard('api')->id() ?? 'Guest') . " | IP: " . request()->ip());
-
         } catch (\Throwable $th) {
             // Silently fail DB logging but log the failure to Laravel logs
             Log::error("Failed to log activity to database: " . $th->getMessage());

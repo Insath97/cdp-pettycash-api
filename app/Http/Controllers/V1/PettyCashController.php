@@ -19,6 +19,7 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use App\Http\Requests\UpdatePettyCashVerificationRequest;
 use App\Http\Requests\UpdatePettyCashApprovalRequest;
+use App\Http\Requests\UpdatePettyCashRequest;
 
 class PettyCashController extends Controller implements HasMiddleware
 {
@@ -33,6 +34,7 @@ class PettyCashController extends Controller implements HasMiddleware
             new Middleware('permission:Petty Cash Approve', only: ['updateStatusApproved']),
             new Middleware('permission:Petty Cash Update Payment Status', only: ['updatePaymentStatus']),
             new Middleware('permission:Petty Cash Delete', only: ['destroy']),
+            new Middleware('permission:Petty Cash Update', only: ['update']),
         ];
     }
 
@@ -118,7 +120,7 @@ class PettyCashController extends Controller implements HasMiddleware
                 Notification::send($usersToNotify, new PettyCashNotification($pettyCash, 'created'));
             }
 
-            $this->logActivity('Submitted Petty Cash', 'Petty Cash', "Submitted petty cash: {$pettyCash->reference_number}", ['id' => $pettyCash->id]);
+            $this->logActivity('Submitted Petty Cash', 'Petty Cash', "Submitted petty cash: {$pettyCash->reference_number} | ID: {$pettyCash->id}");
 
             return response()->json([
                 'status' => 'success',
@@ -210,7 +212,7 @@ class PettyCashController extends Controller implements HasMiddleware
                 }
             }
 
-            $this->logActivity('Updated Petty Cash Payment Status', 'Petty Cash', "Updated payment status for {$pettyCash->reference_number} to {$pettyCash->payment_status}", ['id' => $pettyCash->id, 'payment_status' => $pettyCash->payment_status]);
+            $this->logActivity('Updated Petty Cash Payment Status', 'Petty Cash', "Updated payment status for {$pettyCash->reference_number} to {$pettyCash->payment_status} | ID: {$pettyCash->id}");
 
             Log::info('Petty Cash payment status updated', [
                 'id' => $pettyCash->id,
@@ -328,7 +330,7 @@ class PettyCashController extends Controller implements HasMiddleware
             // Notify inserter about Status Change (Approved/Rejected)
             Notification::route('mail', $pettyCash->email)->notify(new PettyCashNotification($pettyCash, $pettyCash->status));
 
-            $this->logActivity('Approved Petty Cash', 'Petty Cash', "Updated status for {$pettyCash->reference_number} to {$pettyCash->status}", ['id' => $pettyCash->id, 'status' => $pettyCash->status]);
+            $this->logActivity('Approved Petty Cash', 'Petty Cash', "Updated status for {$pettyCash->reference_number} to {$pettyCash->status} | ID: {$pettyCash->id}");
 
             Log::info('Petty Cash approval updated', [
                 'id' => $pettyCash->id,
@@ -400,7 +402,7 @@ class PettyCashController extends Controller implements HasMiddleware
             // Notify inserter about Status Change (Verified/Rejected)
             Notification::route('mail', $pettyCash->email)->notify(new PettyCashNotification($pettyCash, $pettyCash->status));
 
-            $this->logActivity('Verified Petty Cash', 'Petty Cash', "Updated status for {$pettyCash->reference_number} to {$pettyCash->status}", ['id' => $pettyCash->id, 'status' => $pettyCash->status]);
+            $this->logActivity('Verified Petty Cash', 'Petty Cash', "Updated status for {$pettyCash->reference_number} to {$pettyCash->status} | ID: {$pettyCash->id}");
 
             Log::info('Petty Cash verification updated', [
                 'id' => $pettyCash->id,
@@ -417,6 +419,66 @@ class PettyCashController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to update petty cash verification',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the petty cash details (Super User only).
+     */
+    public function update(UpdatePettyCashRequest $request, string $id)
+    {
+        try {
+            $pettyCash = PettyCash::find($id);
+
+            if (!$pettyCash) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Petty cash not found'
+                ], 404);
+            }
+
+            $data = $request->validated();
+
+            // Handle file upload if provided
+            if ($request->hasFile('receipt_image_path')) {
+                // Delete old file if exists
+                if ($pettyCash->receipt_image_path) {
+                    $this->deleteFile($pettyCash->receipt_image_path);
+                }
+
+                $imagePath = $this->handleFileUpload(
+                    $request,
+                    'receipt_image_path',
+                    null,
+                    'petty_cash/receipts',
+                    $pettyCash->reference_number
+                );
+                if ($imagePath) {
+                    $data['receipt_image_path'] = $imagePath;
+                }
+            }
+
+            $pettyCash->update($data);
+
+            $this->logActivity('Updated Petty Cash Details', 'Petty Cash', "Super user updated details for petty cash: {$pettyCash->reference_number} | Changes: " . json_encode($data));
+
+            Log::info('Petty Cash updated by super user', [
+                'id' => $pettyCash->id,
+                'user_id' => Auth::id(),
+                'data' => $data
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Petty cash updated successfully',
+                'data' => $pettyCash->load(['category', 'branch', 'department'])
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update petty cash',
                 'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }

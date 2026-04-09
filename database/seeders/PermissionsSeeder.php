@@ -37,6 +37,7 @@ class PermissionsSeeder extends Seeder
             ['name' => 'Petty Cash Verify', 'group_name' => 'Petty Cash Management Permissions'],
             ['name' => 'Petty Cash Approve', 'group_name' => 'Petty Cash Management Permissions'],
             ['name' => 'Petty Cash Update Payment Status', 'group_name' => 'Petty Cash Management Permissions'],
+            ['name' => 'Petty Cash Update', 'group_name' => 'Petty Cash Management Permissions'],
 
             ['name' => 'Category Index', 'group_name' => 'Category Management Permissions'],
             ['name' => 'Category Store', 'group_name' => 'Category Management Permissions'],
