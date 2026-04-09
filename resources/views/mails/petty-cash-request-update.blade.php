@@ -144,7 +144,7 @@
                 @endif
             </div>
 
-            <a href="{{ $actionUrl }}" class="btn">View Request Details</a>
+           {{--  <a href="{{ $actionUrl }}" class="btn">View Request Details</a> --}}
 
             <p style="margin-top: 30px; font-size: 13px;">If you have any questions, please contact the finance
                 department.</p>

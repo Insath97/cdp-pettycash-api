@@ -43,7 +43,8 @@ class PettyCashNotification extends Notification
     {
         $subject = $this->getSubject();
         $messageText = $this->getMessage();
-        $actionUrl = url('/petty-cash/' . $this->pettyCash->id);
+        $frontendUrl = rtrim(config('app.frontend_url'), '/');
+        $actionUrl = "{$frontendUrl}/petty-cash/" . $this->pettyCash->id;
 
         // Choose template based on type
         $view = ($this->type === 'ready_for_payment')

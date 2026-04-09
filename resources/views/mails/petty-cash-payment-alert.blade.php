@@ -147,7 +147,7 @@
 
             </div>
 
-            <a href="{{ $actionUrl }}" class="btn">Process Payment Now</a>
+           {{--  <a href="{{ $actionUrl }}" class="btn">Process Payment Now</a> --}}
 
             <p style="margin-top: 30px; font-size: 13px;">Please complete the payment and update the status in the
                 system.</p>
